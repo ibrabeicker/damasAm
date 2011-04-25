@@ -72,10 +72,15 @@ public class Tabuleiro implements Subject, Cloneable{
 		tabuleiro[j.getP().getX()][j.getP().getY()] = null;
 		tabuleiro[j.getxDestino()][j.getyDestino()] = j.getP();
 		j.getP().move(j.getxDestino(), j.getyDestino());
-		if(j.come()){
+		if(j.isObrigatoria()){
 			Peca comida = j.getComida();
 			tabuleiro[comida.getX()][comida.getY()] = null;
 			pecas.remove(comida);
+		}
+		if(j.getP().getC() && j.getxDestino() == 7){
+			j.getP().setDama(true);
+		} else if(!j.getP().getC() && j.getxDestino() == 0){
+			j.getP().setDama(true);
 		}
 		notifyObservers();
 	}
@@ -98,7 +103,7 @@ public class Tabuleiro implements Subject, Cloneable{
 		return this.vez;
 	}
 
-	public void fezJogada(Jogador jg){
+	public void passaVez(Jogador jg){
 		this.vez = !this.vez;
 	}
 

@@ -28,6 +28,7 @@ public class Agente implements Observer {
 		this.jogador = jogador;
 		this.tabuleiro = jogador.getTabuleiro();
 		this.cor = jogador.getCor();
+		//TODO: ler um objeto gravado em busca dos pesos
 		this.w[0] = 10;
 		this.w[1] = 10;
 		this.w[2] = -10;
@@ -37,6 +38,10 @@ public class Agente implements Observer {
 		this.w[6] = 15;
 	}
 
+	/**
+	 * Avalia um jogo pronto para ajustar os pesos
+	 * @param jogoCompleto ArrayList de estados do tabuleiro de um jogo completo
+	 */
 	private void avaliaJogo(ArrayList<Tabuleiro> jogoCompleto) {
 		Collections.reverse(jogoCompleto);
 		ArrayList<EstadoTabuleiro> estados = new ArrayList<EstadoTabuleiro>();
@@ -110,8 +115,15 @@ public class Agente implements Observer {
 	private int getAmigasAmeacadas(Tabuleiro t) {
 		t = t.clone();
 		ArrayList<Jogada> jogadas = jogador.mapeiaTodasJogadas(t, !this.cor);
-		if (!jogadas.isEmpty() && jogadas.get(0).come()) {
-			return jogadas.size();
+		if (!jogadas.isEmpty() && jogadas.get(0).isObrigatoria()) {
+			// ha jogadas que comem uma peca
+			int max = 1;
+			for(Jogada j : jogadas){
+				int i = j.getNumJogadasConsecutivas();
+				if (i > max)
+					max = i;
+			}
+			return max;
 		} else {
 			return 0;
 		}
@@ -120,8 +132,15 @@ public class Agente implements Observer {
 	private int getInimigasAmeacadas(Tabuleiro t) {
 		t = t.clone();
 		ArrayList<Jogada> jogadas = jogador.mapeiaTodasJogadas(t, this.cor);
-		if (!jogadas.isEmpty() && jogadas.get(0).come()) {
-			return jogadas.size();
+		if (!jogadas.isEmpty() && jogadas.get(0).isObrigatoria()) {
+			// ha jogadas que comem uma peca
+			int max = 1;
+			for(Jogada j : jogadas){
+				int i = j.getNumJogadasConsecutivas();
+				if (i > max)
+					max = i;
+			}
+			return max;
 		} else {
 			return 0;
 		}
@@ -148,6 +167,7 @@ public class Agente implements Observer {
 	}
 
 	public void terminate() {
+		// nao vai fazer nada
 	}
 
 	public void update(Tabuleiro tabuleiro) {

@@ -20,7 +20,7 @@ public class Jogada {
 	 * proximas obrigatorias faz uma estrutura de arvore com as jogadas que
 	 * comem mais de 1 peca
 	 */
-	private ArrayList<Jogada> proximasObrigatorias;
+	private ArrayList<Jogada> jogadasDaSequencia;
 
 	public Jogada(Peca p, Peca comida, int xDestino, int yDestino) {
 		this.p = p;
@@ -36,8 +36,8 @@ public class Jogada {
 		return false;
 	}
 
-	public void setProxima(ArrayList<Jogada> js){
-		proximasObrigatorias = js;
+	public void setSequencia(ArrayList<Jogada> js){
+		jogadasDaSequencia = js;
 	}
 
 	public Peca getComida() {
@@ -60,13 +60,13 @@ public class Jogada {
 		return this.comida != null;
 	}
 
-	public ArrayList<Jogada> getProximasObrigatorias() {
-		return proximasObrigatorias;
+	public ArrayList<Jogada> getSequencia() {
+		return jogadasDaSequencia;
 	}
 
-	public boolean haProxima(){
-		if(this.proximasObrigatorias == null ||
-				this.proximasObrigatorias.isEmpty())
+	public boolean haSequencia(){
+		if(this.jogadasDaSequencia == null ||
+				this.jogadasDaSequencia.isEmpty())
 			return false;
 		return true;
 	}
@@ -76,14 +76,14 @@ public class Jogada {
 	 * @param j
 	 * @return o numero de jogadas consecutivas
 	 */
-	public int getNumJogadasConsecutivas(){
+	public int getNumSequencia(){
 		int max = 1;
-		if(getProximasObrigatorias() == null ||
-				getProximasObrigatorias().isEmpty()){
+		if(getSequencia() == null ||
+				getSequencia().isEmpty()){
 			return max;
 		}
-		for(Jogada j1 : getProximasObrigatorias()){
-			int i = j1.getNumJogadasConsecutivas() + 1;
+		for(Jogada j1 : getSequencia()){
+			int i = j1.getNumSequencia() + 1;
 			if (i > max)
 				max = i;
 		}

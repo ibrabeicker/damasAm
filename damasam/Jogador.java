@@ -49,15 +49,18 @@ public class Jogador {
 			return false;
 		}
 		if(jp == null){
-			// caso em que ha dois ou mais movimentos para comer
+			/**
+			 * se jp nao for null entao ha jogadas que sao sequencia de
+			 * jogadas anteriores que comeram uma peca
+			 */
 			jp = mapeiaTodasJogadas(t, cor);
 		}
 		for(Jogada j : jp){
 			if(j.correspondeA(p, x, y)){
 				//achou uma jogada permitida correspondente
 				t.executaJogada(j);
-				if(j.haProxima()){
-					jp = j.getProximasObrigatorias();
+				if(j.haSequencia()){
+					jp = j.getSequencia();
 				} else {
 					jp = null;
 					t.passaVez(this);
@@ -118,7 +121,7 @@ public class Jogador {
 				ArrayList<Jogada> proximas = mapeiaJogadaPeca(t1, j[i].getP());
 				if(!proximas.isEmpty() && proximas.get(0).isObrigatoria()){
 					//ha proxima jogada obrigatoria
-					j[i].setProxima(proximas);
+					j[i].setSequencia(proximas);
 				}
 				jogadasObrigatorias.add(j[i]);
 			} else {

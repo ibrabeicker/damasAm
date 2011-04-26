@@ -9,8 +9,15 @@ import damasam.Jogador;
 import damasam.Observer;
 import damasam.Peca;
 import damasam.Tabuleiro;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -21,28 +28,35 @@ public class Agente implements Observer {
 	private Jogador jogador;
 	private boolean cor;
 	private double[] w;
-	private Tabuleiro tabuleiro;
-	private double mi = 0.1;
+	private double mi = 0.1; //valor de reducao do erro
+	private String arquivoObjetoPesos = "pesos.object";
 
 	public Agente(Jogador jogador) {
 		this.jogador = jogador;
-		this.tabuleiro = jogador.getTabuleiro();
 		this.cor = jogador.getCor();
-		//TODO: ler um objeto gravado em busca dos pesos
-		this.w[0] = 10;
-		this.w[1] = 10;
-		this.w[2] = -10;
-		this.w[3] = 20;
-		this.w[4] = -20;
-		this.w[5] = -15;
-		this.w[6] = 15;
+		try {
+			ObjectInputStream oin = new ObjectInputStream(
+					new FileInputStream(arquivoObjetoPesos));
+			this.w = (double[]) oin.readObject();
+			oin.close();
+		} catch (IOException ex) {
+			this.w[0] = 10;
+			this.w[1] = 10;
+			this.w[2] = -10;
+			this.w[3] = 20;
+			this.w[4] = -20;
+			this.w[5] = -15;
+			this.w[6] = 15;
+		} catch (ClassNotFoundException ex1) {
+			System.err.println("Classe nao encontrada");
+		}
 	}
 
 	/**
 	 * Avalia um jogo pronto para ajustar os pesos
 	 * @param jogoCompleto ArrayList de estados do tabuleiro de um jogo completo
 	 */
-	private void avaliaJogo(ArrayList<Tabuleiro> jogoCompleto) {
+	public void funcaoAprendizado(ArrayList<Tabuleiro> jogoCompleto) {
 		Collections.reverse(jogoCompleto);
 		ArrayList<EstadoTabuleiro> estados = new ArrayList<EstadoTabuleiro>();
 		Tabuleiro t = jogoCompleto.get(0);
@@ -69,7 +83,7 @@ public class Agente implements Observer {
 		double diferenca = estados.get(0).getScore() - vAproximado;
 
 		for(int i = 0; i< 7; i++){
-			w[i] = w[i] * diferenca * x[i];
+			w[i] = w[i] + mi * diferenca * x[i];
 		}
 		
 		for (int i = 1; i < jogoCompleto.size(); i++) {
@@ -90,10 +104,20 @@ public class Agente implements Observer {
 			diferenca = estados.get(i-1).getScore() - vAproximado;
 
 			for (i = 0; i < 7; i++) {
-				w[i] = w[i] * diferenca * x[i];
+				w[i] = w[i] + mi * diferenca * x[i];
 			}
 		}
+		try {
+			ObjectOutputStream oout = new ObjectOutputStream(
+					new FileOutputStream(arquivoObjetoPesos));
+			oout.writeObject(w);
+			oout.close();
+		} catch (IOException ex) {
+			Logger.getLogger(Agente.class.getName()).log(Level.SEVERE, null, ex);
+		}
 	}
+
+	private double calculaScore
 
 	private double calculaVAproximado(int[] x, double[] w){
 		int tam = x.length;
@@ -113,13 +137,12 @@ public class Agente implements Observer {
 	}
 
 	private int getAmigasAmeacadas(Tabuleiro t) {
-		t = t.clone();
 		ArrayList<Jogada> jogadas = jogador.mapeiaTodasJogadas(t, !this.cor);
 		if (!jogadas.isEmpty() && jogadas.get(0).isObrigatoria()) {
 			// ha jogadas que comem uma peca
 			int max = 1;
 			for(Jogada j : jogadas){
-				int i = j.getNumJogadasConsecutivas();
+				int i = j.getNumSequencia();
 				if (i > max)
 					max = i;
 			}
@@ -130,13 +153,12 @@ public class Agente implements Observer {
 	}
 
 	private int getInimigasAmeacadas(Tabuleiro t) {
-		t = t.clone();
 		ArrayList<Jogada> jogadas = jogador.mapeiaTodasJogadas(t, this.cor);
 		if (!jogadas.isEmpty() && jogadas.get(0).isObrigatoria()) {
 			// ha jogadas que comem uma peca
 			int max = 1;
 			for(Jogada j : jogadas){
-				int i = j.getNumJogadasConsecutivas();
+				int i = j.getNumSequencia();
 				if (i > max)
 					max = i;
 			}
@@ -167,10 +189,12 @@ public class Agente implements Observer {
 	}
 
 	public void terminate() {
-		// nao vai fazer nada
+		//TODO: pegar o jogo que acabou e usar a funcao aprendizado nele
 	}
 
 	public void update(Tabuleiro tabuleiro) {
-		throw new UnsupportedOperationException("Not supported yet.");
+		if(tabuleiro.getVez() == this.cor){
+			//TODO: calcular melhor jogada e jogar
+		}
 	}
 }

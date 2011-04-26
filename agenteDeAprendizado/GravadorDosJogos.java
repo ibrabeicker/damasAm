@@ -33,11 +33,13 @@ public class GravadorDosJogos implements Observer {
 	public void terminate() {
 		try {
 			ObjectOutputStream objOutStr = new ObjectOutputStream(
-					new FileOutputStream("jogos/" + Long.toString(new Date().getTime())));
+					new FileOutputStream("jogos/" +
+					Long.toString(new Date().getTime())));
 			objOutStr.writeObject(jogoCompleto);
 			objOutStr.close();
 		} catch (IOException ex) {
-			Logger.getLogger(GravadorDosJogos.class.getName()).log(Level.SEVERE, null, ex);
+			Logger.getLogger(GravadorDosJogos.class.getName()).
+					log(Level.SEVERE, null, ex);
 		}
 	}
 }

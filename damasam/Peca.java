@@ -36,6 +36,7 @@ public class Peca {
 	public void move(int x, int y){
 		this.x = x;
 		this.y = y;
+		//System.err.println("Peca "+this.toString()+" -> "+x+":"+y);
 	}
 
 	public int getX() {
@@ -44,6 +45,12 @@ public class Peca {
 
 	public int getY() {
 		return y;
+	}
+
+	@Override
+	public Peca clone(){
+		Peca p = new Peca(this.c, this.x, this.y);
+		return p;
 	}
 
 }

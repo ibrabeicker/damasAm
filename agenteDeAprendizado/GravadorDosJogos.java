@@ -20,10 +20,17 @@ import java.util.logging.Logger;
  */
 public class GravadorDosJogos implements Observer {
 
-	private ArrayList<Tabuleiro> jogoCompleto;
+	private static ArrayList<Tabuleiro> jogoCompleto;
 
 	public GravadorDosJogos() {
-		this.jogoCompleto = new ArrayList<Tabuleiro>();
+		getInstance();
+	}
+
+	public static ArrayList<Tabuleiro> getInstance(){
+		if (jogoCompleto == null){
+			jogoCompleto = new ArrayList<Tabuleiro>();
+		}
+		return jogoCompleto;
 	}
 
 	public void update(Tabuleiro t) {
@@ -31,15 +38,15 @@ public class GravadorDosJogos implements Observer {
 	}
 
 	public void terminate() {
-		try {
-			ObjectOutputStream objOutStr = new ObjectOutputStream(
-					new FileOutputStream("jogos/" +
-					Long.toString(new Date().getTime())));
-			objOutStr.writeObject(jogoCompleto);
-			objOutStr.close();
-		} catch (IOException ex) {
-			Logger.getLogger(GravadorDosJogos.class.getName()).
-					log(Level.SEVERE, null, ex);
-		}
+//		try {
+//			ObjectOutputStream objOutStr = new ObjectOutputStream(
+//					new FileOutputStream("jogos/" +
+//					Long.toString(new Date().getTime())));
+//			objOutStr.writeObject(jogoCompleto);
+//			objOutStr.close();
+//		} catch (IOException ex) {
+//			Logger.getLogger(GravadorDosJogos.class.getName()).
+//					log(Level.SEVERE, null, ex);
+//		}
 	}
 }

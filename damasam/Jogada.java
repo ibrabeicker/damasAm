@@ -13,26 +13,26 @@ import java.util.ArrayList;
  */
 public class Jogada {
 
-	private Peca p;
-	private Peca comida;
-	private int xDestino, yDestino;
+	private int xOrigem, yOrigem, xDestino, yDestino;
 	/**
 	 * proximas obrigatorias faz uma estrutura de arvore com as jogadas que
 	 * comem mais de 1 peca
 	 */
 	private ArrayList<Jogada> jogadasDaSequencia;
 
-	public Jogada(Peca p, Peca comida, int xDestino, int yDestino) {
-		this.p = p;
-		this.comida = comida;
+	public Jogada(int xOrigem, int yOrigem, int xDestino, int yDestino) {
+		this.xOrigem = xOrigem;
+		this.yOrigem = yOrigem;
 		this.xDestino = xDestino;
 		this.yDestino = yDestino;
 	}
 
-	public boolean correspondeA(Peca p, int x, int y){
-		if(p.equals(this.p) && this.xDestino == x && this.yDestino == y){
+	public boolean correspondeA(Jogada j){
+		if(j.getxOrigem() == xOrigem &&
+				j.getyOrigem() == yOrigem &&
+				j.getxDestino() == xDestino &&
+				j.getyDestino() == yDestino)
 			return true;
-		}
 		return false;
 	}
 
@@ -40,12 +40,12 @@ public class Jogada {
 		jogadasDaSequencia = js;
 	}
 
-	public Peca getComida() {
-		return comida;
+	public int getxOrigem() {
+		return xOrigem;
 	}
 
-	public Peca getP() {
-		return p;
+	public int getyOrigem() {
+		return yOrigem;
 	}
 
 	public int getxDestino() {
@@ -57,7 +57,9 @@ public class Jogada {
 	}
 
 	public boolean isObrigatoria(){
-		return this.comida != null;
+		if(xOrigem - xDestino == 2 || xOrigem - xDestino == -2)
+			return true;
+		return false;
 	}
 
 	public ArrayList<Jogada> getSequencia() {
@@ -88,5 +90,22 @@ public class Jogada {
 				max = i;
 		}
 		return max;
+	}
+
+	@Override
+	public String toString(){
+		String s = "";
+		s += xOrigem+":"+yOrigem+" para "+xDestino+":"+yDestino;
+		return s;
+	}
+
+	@Override
+	public Jogada clone(){
+		Jogada j = new Jogada(xOrigem, yOrigem, xDestino, yDestino);
+		return j;
+	}
+
+	Peca getComida() {
+		throw new UnsupportedOperationException("Not yet implemented");
 	}
 }

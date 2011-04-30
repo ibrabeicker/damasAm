@@ -43,23 +43,26 @@ public class Jogador {
 	 * @param y Cordenada y destino da peca p
 	 * @return true se a jogada pode ser concluida, false do contrario
 	 */
-	public boolean joga(Tabuleiro t, Peca p, int x, int y) {
+	public boolean joga(Tabuleiro t, int xO, int yO, int x, int y) {
 		if (t.getVez() != this.cor) {
 			//nao eh a vez dele
 			return false;
 		}
-		if(jp == null){
+		if(jp == null || jp.isEmpty()){
 			/**
 			 * se jp nao for null entao ha jogadas que sao sequencia de
 			 * jogadas anteriores que comeram uma peca
 			 */
 			jp = mapeiaTodasJogadas(t, cor);
+			if(jp.isEmpty())
+				t.declaraVencedor(!cor);
 		}
 		for(Jogada j : jp){
-			if(j.correspondeA(p, x, y)){
+			if(j.correspondeA(new Jogada(xO, yO, x, y))){
 				//achou uma jogada permitida correspondente
 				t.executaJogada(j);
 				if(j.haSequencia()){
+					System.err.println("possiveis = sequencia");
 					jp = j.getSequencia();
 				} else {
 					jp = null;
@@ -68,7 +71,15 @@ public class Jogador {
 				return true;
 			}
 		}
+		System.err.println("nao achou jogada correspondente, jp = "+jp.size());
+		for(Jogada j : jp){
+			System.err.println(j.toString());
+		}
 		return false;
+	}
+
+	public boolean joga(int xO, int yO, int x, int y){
+		return this.joga(tabuleiro, xO, yO, x, y);
 	}
 
 	/**
@@ -79,10 +90,22 @@ public class Jogador {
 	 */
 	public ArrayList<Jogada> mapeiaTodasJogadas(Tabuleiro t, boolean cor) {
 		ArrayList<Jogada> jogadas = new ArrayList<Jogada>();
+		ArrayList<Jogada> jogadasObrigatorias = new ArrayList<Jogada>();
 		ArrayList<Peca> pecas = t.getListaPecas(cor);
-		
+		boolean obrigatoria = false;
 		for (Peca p : pecas) {
-			jogadas.addAll(mapeiaJogadaPeca(t, p));
+			ArrayList<Jogada> js = mapeiaJogadaPeca(t, p);
+			if(js == null || js.isEmpty())
+				continue;
+			jogadas.addAll(js);
+		}
+		for (Jogada j : jogadas){
+			if(j.isObrigatoria()){
+				jogadasObrigatorias.add(j);
+			}
+		}
+		if(!jogadasObrigatorias.isEmpty()){
+			return jogadasObrigatorias;
 		}
 		return jogadas;
 	}
@@ -98,9 +121,7 @@ public class Jogador {
 	 * @return A lista de jogadas possiveis da peca
 	 */
 	private ArrayList<Jogada> mapeiaJogadaPeca(Tabuleiro t,	Peca p){
-		boolean jogadaObrigatoria = false;
 		ArrayList<Jogada> jogadas = new ArrayList<Jogada>();
-		ArrayList<Jogada> jogadasObrigatorias = new ArrayList<Jogada>();
 		Jogada[] j = new Jogada[4];
 		j[0] = montaJogada(t, p, sx, -1);
 		j[1] = montaJogada(t, p, sx, 1);
@@ -110,26 +131,24 @@ public class Jogador {
 		}
 		for (int i = 0; i < 4; i++) {
 			if (j[i] != null && j[i].isObrigatoria()) {
-				jogadaObrigatoria = true;
 				/**
 				 *  calcula se ha jogada seguinte obrigatoria, o metodo clone
 				 *  eh chamado pois o tabuleiro deve ser alterado para calcular
 				 *  as jogadas possiveis depois de uma peca comer outra
 				 */
 				Tabuleiro t1 = t.clone();
-				t1.executaJogada(j[i]);
-				ArrayList<Jogada> proximas = mapeiaJogadaPeca(t1, j[i].getP());
+				t1.executaJogada(j[i].clone());
+				ArrayList<Jogada> proximas = mapeiaJogadaPeca(t1,
+						t1.getCasa(j[i].getxDestino(), j[i].getyDestino()));
 				if(!proximas.isEmpty() && proximas.get(0).isObrigatoria()){
 					//ha proxima jogada obrigatoria
+					System.err.println("ha sequencia");
 					j[i].setSequencia(proximas);
 				}
-				jogadasObrigatorias.add(j[i]);
-			} else {
+				jogadas.add(j[i]);
+			} else if(j[i] != null){
 				jogadas.add(j[i]);
 			}
-		}
-		if(jogadaObrigatoria){
-			return jogadasObrigatorias;
 		}
 		return jogadas;
 	}
@@ -140,12 +159,12 @@ public class Jogador {
 		int yD = p.getY() + sy;
 		if (casaValida(xD, yD)) {
 			if (t.getCasa(xD, yD) == null) {
-				return new Jogada(p, null, xD, yD);
+				return new Jogada(p.getX(), p.getY(), xD, yD);
 			} else if (!(t.getCasa(xD, yD).getC() == p.getC())) {
 				//peca adjacente e de cor diferente
 				if (casaValida(xD + sx, yD + sy)
 						&& t.getCasa(xD + sx, yD + sy) == null) {
-					return new Jogada(p, t.getCasa(xD, yD), xD + sx, yD + sy);
+					return new Jogada(p.getX(), p.getY(), xD + sx, yD + sy);
 				}
 			}
 		}

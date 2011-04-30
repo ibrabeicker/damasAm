@@ -69,18 +69,20 @@ public class Tabuleiro implements Subject, Cloneable{
 	 * @param j
 	 */
 	public void executaJogada(Jogada j){
-		tabuleiro[j.getP().getX()][j.getP().getY()] = null;
-		tabuleiro[j.getxDestino()][j.getyDestino()] = j.getP();
-		j.getP().move(j.getxDestino(), j.getyDestino());
+		//System.err.println(this.toString() + " executando");
+		Peca p = tabuleiro[j.getxOrigem()][j.getyOrigem()];
+		tabuleiro[j.getxDestino()][j.getyDestino()] = p;
+		p.move(j.getxDestino(), j.getyDestino());
+		tabuleiro[j.getxOrigem()][j.getyOrigem()] = null;
 		if(j.isObrigatoria()){
-			Peca comida = j.getComida();
-			tabuleiro[comida.getX()][comida.getY()] = null;
+			int xComida = (j.getxOrigem() + j.getxDestino())/2;
+			int yComida = (j.getyOrigem() + j.getyDestino())/2;
+			Peca comida = tabuleiro[xComida][yComida];
 			pecas.remove(comida);
+			tabuleiro[xComida][yComida] = null;
 		}
-		if(j.getP().getC() && j.getxDestino() == 7){
-			j.getP().setDama(true);
-		} else if(!j.getP().getC() && j.getxDestino() == 0){
-			j.getP().setDama(true);
+		if(j.getxDestino() == 7 || j.getxDestino() == 0){
+			p.setDama(true);
 		}
 		notifyObservers();
 	}
@@ -116,7 +118,12 @@ public class Tabuleiro implements Subject, Cloneable{
 	}
 
 	public void notifyObservers() {
+		if(observador == null){
+			return;
+		}
+		//this.imprimeTabuleiro();
 		for (Observer o : observador){
+			//System.err.println(o.getClass().toString());
 			o.update(this);
 		}
 	}
@@ -133,7 +140,15 @@ public class Tabuleiro implements Subject, Cloneable{
 
 	@Override
 	public Tabuleiro clone(){
-		Tabuleiro t = new Tabuleiro(this.tabuleiro.clone());
+		Tabuleiro t = new Tabuleiro();
+		t.observador = null;
+		t.tabuleiro = new Peca[8][8];
+		t.pecas = new ArrayList<Peca>();
+		for(Peca p : this.pecas){
+			Peca pClone = p.clone();
+			t.pecas.add(pClone);
+			t.tabuleiro[pClone.getX()][pClone.getY()] = pClone;
+		}
 		return t;
 	}
 

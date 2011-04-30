@@ -30,6 +30,7 @@ public class Agente implements Observer {
 	private double[] w;
 	private double mi = 0.1; //valor de reducao do erro
 	private String arquivoObjetoPesos = "pesos.object";
+	private boolean jogando = true;
 
 	public Agente(Jogador jogador) {
 		this.jogador = jogador;
@@ -40,13 +41,7 @@ public class Agente implements Observer {
 			this.w = (double[]) oin.readObject();
 			oin.close();
 		} catch (IOException ex) {
-			this.w[0] = 10;
-			this.w[1] = 10;
-			this.w[2] = -10;
-			this.w[3] = 20;
-			this.w[4] = -20;
-			this.w[5] = -15;
-			this.w[6] = 15;
+			this.w = new double[]{10,10,-10,20,-20,-15,15};
 		} catch (ClassNotFoundException ex1) {
 			System.err.println("Classe nao encontrada");
 		}
@@ -117,7 +112,7 @@ public class Agente implements Observer {
 		}
 	}
 
-	private double calculaScore
+	//private double calculaScore
 
 	private double calculaVAproximado(int[] x, double[] w){
 		int tam = x.length;
@@ -189,12 +184,16 @@ public class Agente implements Observer {
 	}
 
 	public void terminate() {
-		//TODO: pegar o jogo que acabou e usar a funcao aprendizado nele
+		funcaoAprendizado(GravadorDosJogos.getInstance());
 	}
 
 	public void update(Tabuleiro tabuleiro) {
 		if(tabuleiro.getVez() == this.cor){
 			//TODO: calcular melhor jogada e jogar
 		}
+	}
+
+	public void setJogando(boolean b){
+		this.jogando = b;
 	}
 }

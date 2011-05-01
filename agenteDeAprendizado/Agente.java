@@ -7,7 +7,6 @@ package agenteDeAprendizado;
 import damasam.Jogada;
 import damasam.Jogador;
 import damasam.Observer;
-import damasam.Peca;
 import damasam.Tabuleiro;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -27,24 +26,33 @@ public class Agente implements Observer {
 
 	private Jogador jogador;
 	private boolean cor;
-	private double[] w;
-	private double mi = 0.1; //valor de reducao do erro
+	private int[] w;
+	private double mi = 0.0001; //valor de reducao do erro
 	private String arquivoObjetoPesos = "pesos.object";
-	private boolean jogando = true;
+	private int cont = 0;
 
-	public Agente(Jogador jogador) {
+	public Agente(Jogador jogador, String arquivo) {
+		this.arquivoObjetoPesos = arquivo;
 		this.jogador = jogador;
 		this.cor = jogador.getCor();
 		try {
 			ObjectInputStream oin = new ObjectInputStream(
 					new FileInputStream(arquivoObjetoPesos));
-			this.w = (double[]) oin.readObject();
+			this.w = (int[]) oin.readObject();
 			oin.close();
 		} catch (IOException ex) {
-			this.w = new double[]{10,10,-10,20,-20,-15,15};
+			System.err.println(ex.toString());
+			this.w = new int[]{10, 10, -10, 20, -20, -15, 15};
 		} catch (ClassNotFoundException ex1) {
 			System.err.println("Classe nao encontrada");
 		}
+		for (int d : w) {
+			System.err.println(d);
+		}
+	}
+
+	public void setNomeMi(double mi) {
+		this.mi = mi;
 	}
 
 	/**
@@ -53,55 +61,47 @@ public class Agente implements Observer {
 	 */
 	public void funcaoAprendizado(ArrayList<Tabuleiro> jogoCompleto) {
 		Collections.reverse(jogoCompleto);
-		ArrayList<EstadoTabuleiro> estados = new ArrayList<EstadoTabuleiro>();
 		Tabuleiro t = jogoCompleto.get(0);
 
-		//avalia o ultimo estado para determinar se ganhou ou perdeu ou empatou
-		int[] x = new int[]{1,
-			getNAmigas(t),
-			getNInimigas(t),
-			getDamasAmigas(t),
-			getDamasInimigas(t),
-			getAmigasAmeacadas(t),
-			getInimigasAmeacadas(t)};
-
-		if (x[1] == 0) {
-			estados.add(new EstadoTabuleiro(x,-100));
-		} else if (x[2] == 0) {
-			estados.add(new EstadoTabuleiro(x,100));
-		} else {
-			estados.add(new EstadoTabuleiro(x,0));
-		}
-
-		//primeira correcao dos pesos
-		double vAproximado = calculaVAproximado(x, w);
-		double diferenca = estados.get(0).getScore() - vAproximado;
-
-		for(int i = 0; i< 7; i++){
-			w[i] = w[i] + mi * diferenca * x[i];
-		}
-		
-		for (int i = 1; i < jogoCompleto.size(); i++) {
+		int x[];
+		int vAproximado = 0, vTrain, diferenca;
+		for (int i = 0; i < jogoCompleto.size(); i++) {
 			t = jogoCompleto.get(i);
 			x = new int[]{1,
-			getNAmigas(t),
-			getNInimigas(t),
-			getDamasAmigas(t),
-			getDamasInimigas(t),
-			getAmigasAmeacadas(t),
-			getInimigasAmeacadas(t)};
+						getNAmigas(t),
+						getNInimigas(t),
+						getDamasAmigas(t),
+						getDamasInimigas(t),
+						getAmigasAmeacadas(t),
+						getInimigasAmeacadas(t)};
+
+			if (i == 0) {
+				if (x[1] == 0) {
+					vAproximado = -100;
+				} else if (x[2] == 0) {
+					vAproximado = 100;
+				} else {
+					vAproximado = 0;
+				}
+			}
 
 			//neste momento ele pega o vAproximado anterior como score atual
-			estados.add(new EstadoTabuleiro(x, vAproximado));
+			vTrain = vAproximado;
+			//estados.add(new EstadoTabuleiro(x, vTrain));
 
 			//vAproximado eh calculado para o estado atual
 			vAproximado = calculaVAproximado(x, w);
-			diferenca = estados.get(i-1).getScore() - vAproximado;
 
-			for (i = 0; i < 7; i++) {
-				w[i] = w[i] + mi * diferenca * x[i];
+
+			diferenca = vTrain - vAproximado;
+
+			for (int j = 0; j < 7; j++) {
+				int pesoAntigo = w[j];
+				w[j] = (int) (w[j] + mi * diferenca * x[j]);
+				System.err.println("Peso w["+j+"] "+pesoAntigo+"->"+w[j]);
 			}
 		}
+		System.err.println("aprendeu");
 		try {
 			ObjectOutputStream oout = new ObjectOutputStream(
 					new FileOutputStream(arquivoObjetoPesos));
@@ -112,52 +112,97 @@ public class Agente implements Observer {
 		}
 	}
 
-	//private double calculaScore
+	private void joga() {
+		try {
+			Thread.sleep(200);
+		} catch (InterruptedException ex) {
+			Logger.getLogger(Agente.class.getName()).log(Level.SEVERE, null, ex);
+		}
+		ArrayList<Jogada> possiveis = this.jogador.getTabuleiro().listaJogadasPossiveis(cor);
+		if (possiveis.isEmpty()) {
+			System.err.println("nao ha jogadas possiveis, "+ cont);
+			cont++;
+			jogador.getTabuleiro().declaraVencedor(cor);
+			return;
+		}
+		Collections.shuffle(possiveis);
+		int scoreMax = 0, score;
+		Tabuleiro t1;
+		Jogada escolhida = null;
+		for (Jogada j : possiveis) {
+			t1 = this.jogador.getTabuleiro().clone();
+			t1.executaJogada(j);
+			int[] x = new int[]{1,
+				getNAmigas(t1),
+				getNInimigas(t1),
+				getDamasAmigas(t1),
+				getDamasInimigas(t1),
+				getAmigasAmeacadas(t1),
+				getInimigasAmeacadas(t1)};
+			score = calculaVAproximado(x, w);
+			score = (int) score;
+			if (scoreMax == 0 || score > scoreMax) {
+				scoreMax = score;
+				escolhida = j;
+			}
+		}
+		jogador.joga(escolhida.getxOrigem(),
+				escolhida.getyOrigem(),
+				escolhida.getxDestino(),
+				escolhida.getyDestino());
+	}
 
-	private double calculaVAproximado(int[] x, double[] w){
+	//private double calculaScore
+	private int calculaVAproximado(int[] x, int[] w) {
 		int tam = x.length;
-		double resultado = 0;
-		for (int i = 0; i < tam; i++){
+		int resultado = 0;
+		for (int i = 0; i < tam; i++) {
 			resultado += x[i] * w[i];
 		}
 		return resultado;
 	}
 
 	private int getNAmigas(Tabuleiro t) {
-		return t.getListaPecas(cor).size();
+		int cont = 0;
+		for (int i = 0; i < 8; i++) {
+			for (int j = 0; j < 8; j++) {
+				if (t.isPecaCor(cor, i, j)) {
+					cont++;
+				}
+			}
+		}
+		return cont;
 	}
 
 	private int getNInimigas(Tabuleiro t) {
-		return t.getListaPecas(!cor).size();
+		int cont = 0;
+		for (int i = 0; i < 8; i++) {
+			for (int j = 0; j < 8; j++) {
+				if (t.isPecaCor(!cor, i, j)) {
+					cont++;
+				}
+			}
+		}
+		return cont;
 	}
 
 	private int getAmigasAmeacadas(Tabuleiro t) {
-		ArrayList<Jogada> jogadas = jogador.mapeiaTodasJogadas(t, !this.cor);
+		if(t.getVez() != jogador.getCor())
+			return 0;
+		ArrayList<Jogada> jogadas = t.listaJogadasPossiveis(!jogador.getCor());
 		if (!jogadas.isEmpty() && jogadas.get(0).isObrigatoria()) {
-			// ha jogadas que comem uma peca
-			int max = 1;
-			for(Jogada j : jogadas){
-				int i = j.getNumSequencia();
-				if (i > max)
-					max = i;
-			}
-			return max;
+			return jogadas.size();
 		} else {
 			return 0;
 		}
 	}
 
 	private int getInimigasAmeacadas(Tabuleiro t) {
-		ArrayList<Jogada> jogadas = jogador.mapeiaTodasJogadas(t, this.cor);
+		if(t.getVez() != jogador.getCor())
+			return 0;
+		ArrayList<Jogada> jogadas = t.listaJogadasPossiveis(jogador.getCor());
 		if (!jogadas.isEmpty() && jogadas.get(0).isObrigatoria()) {
-			// ha jogadas que comem uma peca
-			int max = 1;
-			for(Jogada j : jogadas){
-				int i = j.getNumSequencia();
-				if (i > max)
-					max = i;
-			}
-			return max;
+			return jogadas.size();
 		} else {
 			return 0;
 		}
@@ -165,9 +210,11 @@ public class Agente implements Observer {
 
 	private int getDamasAmigas(Tabuleiro t) {
 		int cont = 0;
-		for (Peca p : t.getListaPecas(this.cor)) {
-			if (p.getDama()) {
-				cont++;
+		for (int i = 0; i < 8; i++) {
+			for (int j = 0; j < 8; j++) {
+				if (t.isDama(i, j) && t.isPecaCor(cor, i, j)) {
+					cont++;
+				}
 			}
 		}
 		return cont;
@@ -175,25 +222,24 @@ public class Agente implements Observer {
 
 	private int getDamasInimigas(Tabuleiro t) {
 		int cont = 0;
-		for (Peca p : t.getListaPecas(!this.cor)) {
-			if (p.getDama()) {
-				cont++;
+		for (int i = 0; i < 8; i++) {
+			for (int j = 0; j < 8; j++) {
+				if (t.isDama(i, j) && t.isPecaCor(!cor, i, j)) {
+					cont++;
+				}
 			}
 		}
 		return cont;
 	}
 
 	public void terminate() {
+		System.err.println("Terminou");
 		funcaoAprendizado(GravadorDosJogos.getInstance());
 	}
 
 	public void update(Tabuleiro tabuleiro) {
-		if(tabuleiro.getVez() == this.cor){
-			//TODO: calcular melhor jogada e jogar
+		if (tabuleiro.getVez() == this.cor) {
+			joga();
 		}
-	}
-
-	public void setJogando(boolean b){
-		this.jogando = b;
 	}
 }

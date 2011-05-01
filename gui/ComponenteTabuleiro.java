@@ -5,8 +5,8 @@
 package gui;
 
 import damasam.Observer;
-import damasam.Peca;
 import damasam.Tabuleiro;
+import damasam.Tabuleiro.peca;
 import java.awt.Color;
 import java.awt.event.MouseEvent;
 import java.awt.Dimension;
@@ -23,7 +23,7 @@ import javax.swing.JPanel;
  *
  * @author ibrahim
  */
-public class ComponenteTabuleiro extends JPanel implements Observer{
+public class ComponenteTabuleiro extends JPanel implements Observer {
 
 	private int boardDimension = 320;
 	private int cellDimension = boardDimension / 8;
@@ -41,21 +41,21 @@ public class ComponenteTabuleiro extends JPanel implements Observer{
 		this.setMinimumSize(new Dimension(boardDimension, boardDimension));
 		this.setMaximumSize(new Dimension(boardDimension, boardDimension));
 		try {
-			this.blackKing = ImageIO.read(new File("blackKing.png"));
-			this.blackPiece = ImageIO.read(new File("blackPiece.png"));
-			this.redKing = ImageIO.read(new File("redKing.png"));
-			this.redPiece = ImageIO.read(new File("redPiece.png"));
+			this.blackKing = ImageIO.read(new File("src/resources/blackKing.png"));
+			this.blackPiece = ImageIO.read(new File("src/resources/blackPiece.png"));
+			this.redKing = ImageIO.read(new File("src/resources/redKing.png"));
+			this.redPiece = ImageIO.read(new File("src/resources/redPiece.png"));
 		} catch (IOException ex) {
 			Logger.getLogger(ComponenteTabuleiro.class.getName()).log(Level.SEVERE, null, ex);
 		}
-		
+
 	}
 
 	public void setTabuleiro(Tabuleiro t) {
 		this.board = t;
 	}
 
-	public void setPlayerInterface(PlayerInterface pi){
+	public void setPlayerInterface(PlayerInterface pi) {
 		this.pi = pi;
 	}
 
@@ -74,13 +74,6 @@ public class ComponenteTabuleiro extends JPanel implements Observer{
 						j * cellDimension,
 						cellDimension,
 						cellDimension);
-//				if(i == selectedX && j == selectedY){
-//					g.setColor(Color.YELLOW);
-//					g.fillRect(i * cellDimension + 2,
-//						j * cellDimension + 2,
-//						cellDimension - 4,
-//						cellDimension - 4);
-//				}
 			}
 		}
 
@@ -89,62 +82,60 @@ public class ComponenteTabuleiro extends JPanel implements Observer{
 		}
 
 		//desenha pecas
-		Peca beingDragged = null;
+		peca beingDragged = null;
 		for (int i = 0; i < 8; i++) {
-			for (int j = 0; j < 8; j++){				
-				Peca p = board.getCasa(i, j);
-				if(p == null){
+			for (int j = 0; j < 8; j++) {
+				if (j == selectedX && i == selectedY) {
+					beingDragged = board.getCasa(i, j);
 					continue;
 				}
-				if(i == selectedY && j == selectedX){
-					beingDragged = p;
+				peca p = board.getCasa(i, j);
+				if (p == null) {
 					continue;
 				}
-				if (p.getC() && p.getDama())
-						g.drawImage(redKing,
-								j * cellDimension,
-								i * cellDimension,
-								this);
-				else if(p.getC() && !p.getDama())
-						g.drawImage(redPiece,
-								j * cellDimension,
-								i * cellDimension,
-								this);
-				else if (!p.getC() && p.getDama())
-						g.drawImage(blackKing,
-								j * cellDimension,
-								i * cellDimension,
-								this);
-				else
-						g.drawImage(blackPiece,
-								j * cellDimension,
-								i * cellDimension,
-								this);	
+				BufferedImage img = null;
+				switch (p) {
+					case VERMELHA:
+						img = redPiece;
+						break;
+					case PRETA:
+						img = blackPiece;
+						break;
+					case DAMA_VERMELHA:
+						img = redKing;
+						break;
+					case DAMA_PRETA:
+						img = blackKing;
+						break;
+				}
+				g.drawImage(img,
+						j * cellDimension,
+						i * cellDimension,
+						this);
 			}
 		}
-		if(beingDragged != null){
-			if (beingDragged.getC() && beingDragged.getDama())
-						g.drawImage(redKing,
-								mouseX - (cellDimension/2),
-								mouseY - (cellDimension/2),
-								this);
-				else if(beingDragged.getC() && !beingDragged.getDama())
-						g.drawImage(redPiece,
-								mouseX - (cellDimension/2),
-								mouseY - (cellDimension/2),
-								this);
-				else if (!beingDragged.getC() && beingDragged.getDama())
-						g.drawImage(blackKing,
-								mouseX - (cellDimension/2),
-								mouseY - (cellDimension/2),
-								this);
-				else
-						g.drawImage(blackPiece,
-								mouseX - (cellDimension/2),
-								mouseY - (cellDimension/2),
-								this);
-		}
 
+		if (beingDragged != null) {
+			BufferedImage img = null;
+			switch (beingDragged) {
+				case VERMELHA:
+					img = redPiece;
+					break;
+				case PRETA:
+					img = blackPiece;
+					break;
+				case DAMA_VERMELHA:
+					img = redKing;
+					break;
+				case DAMA_PRETA:
+					img = blackKing;
+					break;
+			}
+			g.drawImage(img,
+					mouseX - cellDimension / 2,
+					mouseY - cellDimension / 2,
+					this);
+		}
 
 	}
 
@@ -157,17 +148,17 @@ public class ComponenteTabuleiro extends JPanel implements Observer{
 	}
 
 	void mousePressed(MouseEvent evt) {
-		selectedX = evt.getX()/cellDimension;
-		selectedY = evt.getY()/cellDimension;
-		if(board.getCasa(selectedY, selectedX) == null){
+		selectedX = evt.getX() / cellDimension;
+		selectedY = evt.getY() / cellDimension;
+		if (board.getCasa(selectedY, selectedX) == null) {
 			selectedX = -1;
 			selectedY = -1;
 		}
 	}
 
 	void mouseReleased(MouseEvent evt) {
-		int x = evt.getX()/cellDimension;
-		int y = evt.getY()/cellDimension;
+		int x = evt.getX() / cellDimension;
+		int y = evt.getY() / cellDimension;
 		pi.makePlay(selectedY, selectedX, y, x);
 		selectedX = -1;
 		selectedY = -1;
@@ -175,7 +166,7 @@ public class ComponenteTabuleiro extends JPanel implements Observer{
 	}
 
 	void mouseDragged(MouseEvent evt) {
-		if(selectedX > 0 && selectedY > 0){
+		if (selectedX > 0 && selectedY > 0) {
 			mouseX = evt.getX();
 			mouseY = evt.getY();
 			repaint();

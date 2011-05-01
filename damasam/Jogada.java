@@ -57,7 +57,7 @@ public class Jogada {
 	}
 
 	public boolean isObrigatoria(){
-		if(xOrigem - xDestino == 2 || xOrigem - xDestino == -2)
+		if(yOrigem - yDestino == 2 || yDestino - yOrigem == 2)
 			return true;
 		return false;
 	}
@@ -105,7 +105,14 @@ public class Jogada {
 		return j;
 	}
 
-	Peca getComida() {
-		throw new UnsupportedOperationException("Not yet implemented");
+	public static boolean haObrigatoria(ArrayList<Jogada> js){
+		if(js == null){
+			return false;
+		}
+		for(Jogada j : js){
+			if(j.isObrigatoria())
+				return true;
+		}
+		return false;
 	}
 }

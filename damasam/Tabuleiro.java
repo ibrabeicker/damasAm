@@ -4,18 +4,20 @@
  */
 package damasam;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
 /**
  *
  * @author ibrahim
  */
-public class Tabuleiro implements Subject, Cloneable{
+public class Tabuleiro implements Subject, Cloneable, Serializable{
 
-	private Peca[][] tabuleiro;
-	private ArrayList<Peca> pecas;
+	private peca[][] tabuleiro;
 	private boolean vez; //vez de quem jogar
 	private ArrayList<Observer> observador;
+	public enum peca{VERMELHA, PRETA, DAMA_VERMELHA, DAMA_PRETA};
+	private boolean terminado = false;
 
 	/* pecas pretas = false
 	 * sentido pra cima
@@ -23,42 +25,20 @@ public class Tabuleiro implements Subject, Cloneable{
 
 	public Tabuleiro() {
 		this.observador = new ArrayList<Observer>();
-		this.tabuleiro = new Peca[8][8];
-		this.pecas = new ArrayList<Peca>();
-		this.vez = false;
+		this.tabuleiro = new peca[8][8];
+		this.vez = true;
 
 		for (int i = 0; i < 3; i++) {
 			for (int j = 0; j < 8; j++) {
 				if ((i + j) % 2 == 0) {
-					Peca p = new Peca(true, i, j);
-					tabuleiro[i][j] = p;
-					pecas.add(p);
+					tabuleiro[i][j] = peca.VERMELHA;
 				}
 			}
 		}
 		for (int i = 5; i < 8; i++) {
 			for (int j = 0; j < 8; j++) {
 				if ((i + j) % 2 == 0) {
-					Peca p = new Peca(false, i, j);
-					tabuleiro[i][j] = p;
-					pecas.add(p);
-				}
-			}
-		}
-	}
-
-	/**
-	 * Cria um novo tabuleiro para o metodo clone()
-	 *
-	 * @param tabuleiro A matriz do tabuleiro
-	 */
-	public Tabuleiro(Peca[][] tabuleiro){
-		this.tabuleiro = tabuleiro;
-		this.pecas = new ArrayList<Peca>();
-		for(int i = 0; i < 8; i++){
-			for(int j = 0; j < 8; j++){
-				if(this.tabuleiro[i][j] != null){
-					pecas.add(tabuleiro[i][j]);
+					tabuleiro[i][j] = peca.PRETA;
 				}
 			}
 		}
@@ -69,43 +49,133 @@ public class Tabuleiro implements Subject, Cloneable{
 	 * @param j
 	 */
 	public void executaJogada(Jogada j){
-		//System.err.println(this.toString() + " executando");
-		Peca p = tabuleiro[j.getxOrigem()][j.getyOrigem()];
-		tabuleiro[j.getxDestino()][j.getyDestino()] = p;
-		p.move(j.getxDestino(), j.getyDestino());
+		tabuleiro[j.getxDestino()][j.getyDestino()] = tabuleiro[j.getxOrigem()][j.getyOrigem()];
 		tabuleiro[j.getxOrigem()][j.getyOrigem()] = null;
 		if(j.isObrigatoria()){
 			int xComida = (j.getxOrigem() + j.getxDestino())/2;
 			int yComida = (j.getyOrigem() + j.getyDestino())/2;
-			Peca comida = tabuleiro[xComida][yComida];
-			pecas.remove(comida);
 			tabuleiro[xComida][yComida] = null;
 		}
 		if(j.getxDestino() == 7 || j.getxDestino() == 0){
-			p.setDama(true);
+			setDama(j.getxDestino(), j.getyDestino());
 		}
 		notifyObservers();
 	}
 
-	public ArrayList<Peca> getListaPecas(boolean cor){
-		ArrayList<Peca> listaPecas = new ArrayList<Peca>();
-		for (Peca p : pecas){
-			if (p.getC() == cor){
-				listaPecas.add(p);
+	public ArrayList<Jogada> listaJogadasPossiveis(boolean cor){
+		ArrayList<Jogada> obrigatorias = new ArrayList<Jogada>();
+		ArrayList<Jogada> js = new ArrayList<Jogada>();
+		for(int i = 0; i< 8; i++){
+			for(int j = 0; j < 8; j++){
+				if (isPecaCor(cor, i, j)){
+					js.addAll(listaJogadasPeca(i, j));
+				}
 			}
 		}
-		return listaPecas;
+		for (Jogada j : js){
+			if(j.isObrigatoria()){
+				obrigatorias.add(j);
+			}
+		}
+		if(!obrigatorias.isEmpty()){
+			return obrigatorias;
+		}
+		return js;
 	}
 
-	public Peca getCasa(int x, int y){
+	public ArrayList<Jogada> listaJogadasPeca(int x, int y){
+		ArrayList<Jogada> jogadas = new ArrayList<Jogada>();
+		ArrayList<Jogada> obrigatoria = new ArrayList<Jogada>();
+		int sx;
+		if(vez){
+			sx = 1;
+		} else {
+			sx = -1;
+		}
+		Jogada[] direcao = new Jogada[4];
+		direcao[0] = montaJogada(x, y, sx, 1);
+		direcao[1] = montaJogada(x, y, sx, -1);
+		if(isDama(x,y)){
+			direcao[2] = montaJogada(x, y, -sx, 1);
+			direcao[3] = montaJogada(x, y, -sx, -1);
+		}
+		for(Jogada j : direcao){
+			if(j != null){
+				if(j.isObrigatoria()){
+					Tabuleiro tClone = this.clone();
+					tClone.executaJogada(j);
+					//tClone.imprimeTabuleiro();
+					ArrayList<Jogada> seguinte = tClone.listaJogadasPeca(j.getxDestino(), j.getyDestino());
+					if(!seguinte.isEmpty() && seguinte.get(0).isObrigatoria()){
+						j.setSequencia(seguinte);
+					}
+					obrigatoria.add(j);
+				}
+				else{
+					jogadas.add(j);
+				}
+			}
+		}
+		if(!obrigatoria.isEmpty())
+			return obrigatoria;
+		return jogadas;
+	}
+
+	public Jogada montaJogada(int x, int y, int sx, int sy) {
+		int xD = x + sx;
+		int yD = y + sy;
+		if (casaValida(xD, yD)) {
+			if (tabuleiro[xD][yD] == null) {
+				return new Jogada(x, y, xD, yD);
+			} else if (isPecaCor(!vez, xD, yD)) {
+				//peca adjacente e de cor diferente
+				if (casaValida(xD + sx, yD + sy)
+						&& tabuleiro[xD + sx][yD + sy] == null) {
+					return new Jogada(x, y, xD + sx, yD + sy);
+				}
+			}
+		}
+		return null;
+	}
+
+	private boolean casaValida(int x, int y) {
+		if (x >= 0 && x < 8 && y >= 0 && y < 8) {
+			return true;
+		}
+		return false;
+	}
+
+	public peca getCasa(int x, int y){
 		return tabuleiro[x][y];
+	}
+
+	public boolean isPecaCor(boolean b, int x, int y){
+		if(b){
+			return (tabuleiro[x][y] == peca.VERMELHA ||
+					tabuleiro[x][y] == peca.DAMA_VERMELHA);
+		} else {
+		return (tabuleiro[x][y] == peca.PRETA ||
+					tabuleiro[x][y] == peca.DAMA_PRETA);
+		}
+	}
+
+	public void setDama(int x, int y){
+		if(tabuleiro[x][y] == peca.VERMELHA)
+			tabuleiro[x][y] = peca.DAMA_VERMELHA;
+		else if(tabuleiro[x][y] == peca.PRETA)
+			tabuleiro[x][y] = peca.DAMA_PRETA;
+	}
+
+	public boolean isDama(int x, int y){
+		return (tabuleiro[x][y] == peca.DAMA_PRETA ||
+				tabuleiro[x][y] == peca.DAMA_VERMELHA);
 	}
 
 	public boolean getVez(){
 		return this.vez;
 	}
 
-	public void passaVez(Jogador jg){
+	public void passaVez(){
 		this.vez = !this.vez;
 	}
 
@@ -118,13 +188,20 @@ public class Tabuleiro implements Subject, Cloneable{
 	}
 
 	public void notifyObservers() {
-		if(observador == null){
+		if(observador == null || terminado){
 			return;
 		}
-		//this.imprimeTabuleiro();
 		for (Observer o : observador){
-			//System.err.println(o.getClass().toString());
 			o.update(this);
+		}
+	}
+
+	public void notifyTerminationObservers() {
+		if (!terminado) {
+			terminado = true;
+			for (Observer o : observador) {
+				o.terminate();
+			}
 		}
 	}
 
@@ -132,35 +209,42 @@ public class Tabuleiro implements Subject, Cloneable{
 		notifyTerminationObservers();
 	}
 
-	public void notifyTerminationObservers() {
-		for (Observer o : observador){
-			o.terminate();
-		}
-	}
+	
 
 	@Override
 	public Tabuleiro clone(){
 		Tabuleiro t = new Tabuleiro();
 		t.observador = null;
-		t.tabuleiro = new Peca[8][8];
-		t.pecas = new ArrayList<Peca>();
-		for(Peca p : this.pecas){
-			Peca pClone = p.clone();
-			t.pecas.add(pClone);
-			t.tabuleiro[pClone.getX()][pClone.getY()] = pClone;
+		if(this.vez)
+			t.vez = true;
+		else
+			t.vez = false;
+		t.tabuleiro = new peca[8][8];
+		for (int i = 0; i < 8; i++) {
+			for (int j = 0; j < 8; j++) {
+				peca p = this.tabuleiro[i][j];
+				if(p == null){
+					t.tabuleiro[i][j] = null;
+					continue;
+				}
+				switch(p){
+					case VERMELHA: t.tabuleiro[i][j] = peca.VERMELHA; break;
+					case PRETA: t.tabuleiro[i][j] = peca.PRETA; break;
+					case DAMA_VERMELHA: t.tabuleiro[i][j] = peca.DAMA_VERMELHA; break;
+					case DAMA_PRETA: t.tabuleiro[i][j] = peca.DAMA_PRETA; break;
+				}
+			}
 		}
 		return t;
 	}
 
-	public void imprimeTabuleiro(){
-		for(int i = 0; i < 8; i++){
-			for(int j = 0; j < 8; j++){
-				if(this.tabuleiro[i][j] != null
-						&& !this.tabuleiro[i][j].getC()){
-					System.out.print("P");
-				} else if(this.tabuleiro[i][j] != null
-						&& this.tabuleiro[i][j].getC()){
+	public void imprimeTabuleiro() {
+		for (int i = 0; i < 8; i++) {
+			for (int j = 0; j < 8; j++) {
+				if (isPecaCor(true, i, j)) {
 					System.out.print("V");
+				} else if (isPecaCor(false, i, j)) {
+					System.out.print("P");
 				} else {
 					System.out.print(" ");
 				}
@@ -169,4 +253,5 @@ public class Tabuleiro implements Subject, Cloneable{
 		}
 		System.out.println();
 	}
+
 }

@@ -6,14 +6,14 @@
 package gui;
 
 import damasam.Jogador;
-import damasam.Peca;
+import damasam.Observer;
 import damasam.Tabuleiro;
 
 /**
  *
  * @author ibrahim
  */
-public class PlayerController implements PlayerInterface {
+public class PlayerController implements PlayerInterface, Observer {
 
 
 	private Jogador jPreto, jVermelho;
@@ -26,11 +26,22 @@ public class PlayerController implements PlayerInterface {
 	}
 
 	public void makePlay(int oX, int oY, int dX, int dY) {
+		if(jVermelho == null || jPreto == null)
+			return;
 		if(t.getVez()){
 			jVermelho.joga(oX, oY, dX, dY);
 		} else {
 			jPreto.joga(oX, oY, dX, dY);
 		}
+	}
+
+	public void update(Tabuleiro tabuleiro) {
+		//throw new UnsupportedOperationException("Not supported yet.");
+	}
+
+	public void terminate() {
+		this.jPreto = null;
+		this.jVermelho = null;
 	}
 
 }
